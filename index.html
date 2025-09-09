@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>แอปจัดการชีวิตและการเงิน (ครบจบในหน้าเดียว)</title>
+<style>
+  /* Reset & base */
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0; padding: 0;
+    background: #f0f2f5;
+    color: #222;
+    transition: background 0.3s, color 0.3s;
+  }
+  body.dark {
+    background: #121212;
+    color: #eee;
+  }
+  header {
+    background: #007bff;
+    color: white;
+    padding: 15px 20px;
+    font-size: 1.5em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  header button {
+    background: transparent;
+    border: 1.5px solid white;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background 0.3s;
+  }
+  header button:hover {
+    background: white;
+    color: #007bff;
+  }
+  nav {
+    display: flex;
+    background: #eee;
+    border-bottom: 1px solid #ccc;
+    overflow-x: auto;
+  }
+  nav button {
+    flex: 1 0 auto;
+    padding: 12px 16px;
+    border: none;
+    background: #eee;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background 0.3s;
+    white-space: nowrap;
+  }
+  nav button.active {
+    background: #007bff;
+    color: white;
+    font-weight: bold;
+  }
+  nav button:hover:not(.active) {
+    background: #cce4ff;
+  }
+  main {
+    padding: 20px;
+    max-width: 900px;
+    margin: auto;
+  }
+  section {
+    display: none;
+  }
+  section.active {
+    display: block;
+  }
+  /* Common */
+  input, select, textarea, button {
+    font-size: 1em;
+  }
+  input, select, textarea {
+    padding: 8px;
+    margin: 6px 0 12px 0;
+    width: 100%;
+    max-width: 400px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    transition: border-color 0.3s;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: #007bff;
+    outline: none;
+  }
+  button.add-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    cursor: pointer;
+    border-radius: 6px;
+    margin-top: 6px;
+    transition: background 0.3s;
+  }
+  button.add-btn:hover {
+    background: #218838;
+  }
+  ul, table {
+    margin-top: 12px;
+  }
+  ul {
+    padding-left: 20px;
+  }
+  li {
+    margin-bottom: 8px;
+  }
+  li.completed span {
+    text-decoration: line-through;
+    color: gray;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  th, td {
+    border: 1px solid #ccc;
+    padding: 8px 10px;
+    text-align: left;
+  }
+  th {
+    background: #007bff;
+    color: white;
+  }
+  button.delete-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  button.delete-btn:hover {
+    background: #b02a37;
+  }
+  /* Calendar */
+  #calendarGrid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    margin-top: 12px;
+  }
+  #calendarGrid div {
+    background: #e9ecef;
+    padding: 10px;
+    border-radius: 6px;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+  }
+  #calendarGrid div.today {
+    background: #007bff;
+    color: white;
+    font-weight: bold;
+  }
+  #calendarGrid div.has-event {
+    border: 2px solid #28a745;
+  }
+  /* Progress bar for goals */
+  .progress-bar {
+    background: #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+    height: 16px;
+    margin-top: 6px;
+    max-width: 400px;
+  }
+  .progress-bar > div {
+    height: 100%;
+    background: #28a745;
+    width: 0%;
+    transition: width 0.3s;
+  }
+  /* Responsive */
+  @media (max-width: 600px) {
+    nav button {
+      font-size: 0.9em;
+      padding: 10px 8px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>แอปจัดการชีวิตและการเงิน</div>
+  <button id="darkModeToggle">โหมดกลางคืน</button>
+</header>
+
+<nav>
+  <button class="tab-btn active" data-tab="dashboard">แดชบอร์ด</button>
+  <button class="tab-btn" data-tab="calendar">ปฏิทิน</button>
+  <button class="tab-btn" data-tab="todo">To-do List</button>
+  <button class="tab-btn" data-tab="notes">บันทึก</button>
+  <button class="tab-btn" data-tab="goals">เป้าหมาย</button>
+  <button class="tab-btn" data-tab="stats">สถิติ</button>
+</nav>
+
+<main>
+  <!-- Dashboard -->
+  <section id="dashboard" class="active">
+    <h2>แดชบอร์ดสรุป</h2>
+    <p>งาน To-do ที่ยังไม่เสร็จ: <strong id="todoPendingCount">0</strong></p>
+    <p>กิจกรรมวันนี้: <strong id="todayEventsCount">0</strong></p>
+    <p>บันทึกทั้งหมด: <strong id="notesCount">0</strong></p>
+    <p>คะแนน Gamification: <strong id="gamificationPoints">0</strong></p>
+  </section>
+
+  <!-- Calendar -->
+  <section id="calendar">
+    <h2>ปฏิทิน / ตารางเวลา</h2>
+    <div style="display:flex; justify-content: space-between; max-width: 400px; margin-bottom: 10px;">
+      <button id="prevMonthBtn">เดือนก่อน</button>
+      <div id="monthYearLabel" style="font-weight:bold; font-size:1.2em;"></div>
+      <button id="nextMonthBtn">เดือนถัดไป</button>
+    </div>
+    <div id="calendarGrid"></div>
+    <h3>กิจกรรมวันที่ <span id="selectedDateLabel"></span></h3>
+    <ul id="eventsList"></ul>
+    <input type="text" id="newEventInput" placeholder="เพิ่มกิจกรรมใหม่..." style="max-width:400px;"/>
+    <button id="addEventBtn" class="add-btn">เพิ่มกิจกรรม</button>
+  </section>
+
+  <!-- To-do List -->
+  <section id="todo">
+    <h2>To-do List</h2>
+    <input type="text" id="todoInput" placeholder="เพิ่มงานใหม่..." style="max-width:400px;"/>
+    <button id="addTodoBtn" class="add-btn">เพิ่ม</button>
+    <ul id="todoList"></ul>
+  </section>
+
+  <!-- Notes -->
+  <section id="notes">
+    <h2>บันทึก</h2>
+    <textarea id="noteInput" rows="5" placeholder="เขียนบันทึกของคุณที่นี่..." style="max-width:400px;"></textarea>
+    <button id="addNoteBtn" class="add-btn">เพิ่มบันทึก</button>
+    <div id="notesList"></div>
+  </section>
+
+  <!-- Goals -->
+  <section id="goals">
+    <h2>เป้าหมายประจำวัน/สัปดาห์/เดือน</h2>
+    <div>
+      <label>เป้าหมายประจำวัน: </label>
+      <input type="text" id="goalDailyInput" placeholder="เช่น อ่านหนังสือ 2 ชม." style="max-width:300px;"/>
+      <button id="saveGoalDailyBtn" class="add-btn">บันทึก</button>
+      <div class="progress-bar"><div id="goalDailyProgress" style="width:0%"></div></div>
+      <button id="completeGoalDailyBtn" class="add-btn" style="margin-top:6px;">ทำสำเร็จ</button>
+    </div>
+    <div style="margin-top:20px;">
+      <label>เป้าหมายประจำสัปดาห์: </label>
+      <input type="text" id="goalWeeklyInput" placeholder="เช่น วิ่ง 5 กม." style="max-width:300px;"/>
+      <button id="saveGoalWeeklyBtn" class="add-btn">บันทึก</button>
+      <div class="progress-bar"><div id="goalWeeklyProgress" style="width:0%"></div></div>
+      <button id="completeGoalWeeklyBtn" class="add-btn" style="margin-top:6px;">ทำสำเร็จ</button>
+    </div>
+    <div style="margin-top:20px;">
+      <label>เป้าหมายประจำเดือน: </label>
+      <input type="text" id="goalMonthlyInput" placeholder="เช่น ออมเงิน 1000 บาท" style="max-width:300px;"/>
+      <button id="saveGoalMonthlyBtn" class="add-btn">บันทึก</button>
+      <div class="progress-bar"><div id="goalMonthlyProgress" style="width:0%"></div></div>
+      <button id="completeGoalMonthlyBtn" class="add-btn" style="margin-top:6px;">ทำสำเร็จ</button>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <section id="stats">
+    <h2>สถิติ / สรุปผล</h2>
+    <canvas id="taskChart" width="400" height="200"></canvas>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  // --- Tab navigation ---
+  const tabs = document.querySelectorAll('.tab-btn');
+  const sections = document.querySelectorAll('main > section');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const target = tab.dataset.tab;
+      sections.forEach(sec => {
+        sec.id === target ? sec.classList.add('active') : sec.classList.remove('active');
+      });
+      updateDashboard();
+    });
+  });
+
+  // --- Dark mode toggle ---
+  const darkToggleBtn = document.getElementById('darkModeToggle');
+  if(localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark');
+  darkToggleBtn.textContent = document.body.classList.contains('dark') ? 'โหมดปกติ' : 'โหมดกลางคืน';
+  darkToggleBtn.addEventListener('click', () => {
+    document.body.classList.toggle('dark');
+    const isDark = document.body.classList.contains('dark');
+    localStorage.setItem('darkMode', isDark);
+    darkToggleBtn.textContent = isDark ? 'โหมดปกติ' : 'โหมดกลางคืน';
+  });
+
+  // --- Data storage keys ---
+  const STORAGE = {
+    TODOS: 'app_todos',
+    NOTES: 'app_notes',
+    EVENTS: 'app_events',
+    GOALS: 'app_goals',
+    GAMIFICATION: 'app_gamification'
+  };
+
+  // --- Load data or init ---
+  let todos = JSON.parse(localStorage.getItem(STORAGE.TODOS) || '[]');
+  let notes = JSON.parse(localStorage.getItem(STORAGE.NOTES) || '[]');
+  let events = JSON.parse(localStorage.getItem(STORAGE.EVENTS) || '{}'); // { 'YYYY-MM-DD': [event1, event2] }
+  let goals = JSON.parse(localStorage.getItem(STORAGE.GOALS) || '{}'); // { daily: {text, progress}, weekly: {...}, monthly: {...} }
+  let gamificationPoints = parseInt(localStorage.getItem(STORAGE.GAMIFICATION) || '0');
+
+  // --- Save functions ---
+  function saveTodos() { localStorage.setItem(STORAGE.TODOS, JSON.stringify(todos)); }
+  function saveNotes() { localStorage.setItem(STORAGE.NOTES, JSON.stringify(notes)); }
+  function saveEvents() { localStorage.setItem(STORAGE.EVENTS, JSON.stringify(events)); }
+  function saveGoals() { localStorage.setItem(STORAGE.GOALS, JSON.stringify(goals)); }
+  function saveGamification() { localStorage.setItem(STORAGE.GAMIFICATION, gamificationPoints.toString()); }
+
+  // --- Dashboard update ---
+  function updateDashboard() {
+    document.getElementById('todoPendingCount').textContent = todos.filter(t => !t.completed).length;
+    const todayStr = formatDate(new Date());
+    document.getElementById('todayEventsCount').textContent = (events[todayStr] || []).length;
+    document.getElementById('notesCount').textContent = notes.length;
+    document.getElementById('gamificationPoints').textContent = gamificationPoints;
+  }
+
+  // --- To-do List ---
+  const todoInput = document.getElementById('todoInput');
+  const todoList = document.getElementById('todoList');
+  function renderTodos() {
+    todoList.innerHTML = '';
+    todos.forEach((task, i) => {
+      const li = document.createElement('li');
+      li.className = task.completed ? 'completed' : '';
+      li.innerHTML = `
+        <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTodo(${i})" />
+        <span>${task.text}</span>
+        <button onclick="deleteTodo(${i})" style="margin-left:10px;">ลบ</button>
+      `;
+      todoList.appendChild(li);
+    });
+    updateDashboard();
+  }
+  function addTodo() {
+    const text = todoInput.value.trim();
+    if (!text) return alert('กรุณาใส่ข้อความงาน');
+    todos.push({ text, completed: false });
+    saveTodos();
+    renderTodos();
+    todoInput.value = '';
+  }
+  function toggleTodo(i) {
+    todos[i].completed = !todos[i].completed;
+    if(todos[i].completed) gamificationPoints += 5;
+    saveTodos();
+    saveGamification();
+    renderTodos();
+  }
+  function deleteTodo(i) {
+    if (confirm('ลบงานนี้?')) {
+      todos.splice(i, 1);
+      saveTodos();
+      renderTodos();
+    }
+  }
+  document.getElementById('addTodoBtn').addEventListener('click', addTodo);
+  todoInput.addEventListener('keypress', e => { if (e.key === 'Enter') addTodo(); });
+
+  // --- Notes ---
+  const noteInput = document.getElementById('noteInput');
+  const notesList = document.getElementById('notesList');
+  function renderNotes() {
+    notesList.innerHTML = '';
+    notes.forEach((note, i) => {
+      const div = document.createElement('div');
+      div.style.border = '1px solid #ccc';
+      div.style.padding = '8px';
+      div.style.marginBottom = '8px';
+      div.style.borderRadius = '6px';
+      const date = new Date(note.date);
+      div.innerHTML = `
+        <div style="font-size:0.8em; color:gray;">${date.toLocaleString('th-TH')}</div>
+        <div>${note.text.replace(/\n/g, '<br>')}</div>
+        <button onclick="deleteNote(${i})" style="margin-top:6px; background:#dc3545; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">ลบ</button>
+      `;
+      notesList.appendChild(div);
+    });
+    updateDashboard();
+  }
+  function addNote() {
+    const text = noteInput.value.trim();
+    if (!text) return alert('กรุณาเขียนบันทึกก่อนเพิ่ม');
+    notes.unshift({ text, date: new Date().toISOString() });
+    saveNotes();
+    renderNotes();
+    noteInput.value = '';
+  }
+  function deleteNote(i) {
+    if (confirm('ลบบันทึกนี้?')) {
+      notes.splice(i, 1);
+      saveNotes();
+      renderNotes();
+    }
+  }
+  document.getElementById('addNoteBtn').addEventListener('click', addNote);
+
+  // --- Calendar ---
+  const calendarGrid = document.getElementById('calendarGrid');
+  const monthYearLabel = document.getElementById('monthYearLabel');
+  const eventsList = document.getElementById('eventsList');
+  const newEventInput = document.getElementById('newEventInput');
+  const addEventBtn = document.getElementById('addEventBtn');
+  const selectedDateLabel = document.getElementById('selectedDateLabel');
+  let currentDate = new Date();
+  let selectedDate = formatDate(new Date());
+
+  function formatDate(date) {
+    return date.toISOString().slice(0,10);
+  }
+
+  function renderCalendar() {
+    calendarGrid.innerHTML = '';
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    monthYearLabel.text
